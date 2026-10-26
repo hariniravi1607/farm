@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% block bare %}
+<div class="auth"><div class="art"><div class="brand" style="padding:0"><svg viewBox="0 0 32 32"><path d="M16 2 28 9v14L16 30 4 23V9Z" fill="#32D583"/><path d="M16 23v-8m0 0c0-3 2-5 6-5 0 3-2 5-6 5Zm0 3c0-2-1.5-4-5-4 0 2 1.5 4 5 4Z" stroke="#101713" stroke-width="2" fill="none" stroke-linecap="round"/></svg><span>Farm<b>Nova</b></span></div>
+<div><h1>Know your soil before you sow.</h1><ul><li><b>Soil testing</b>Find a lab in your region</li><li><b>Crop recommendation</b>The best crop for your soil report</li><li><b>Disease prediction</b>Spot leaf problems early</li><li><b>Farmer Connect</b>Learn from farmers like you</li></ul></div>
+<p class="mut">Your personal farming guide, anytime.</p></div>
+<div class="af"><h2>Welcome to FarmNova</h2><p class="mut" style="margin-top:6px">Sign in or create an account to continue.</p>
+<div class="tabs"><button class="on" id="b1" onclick="t(1)">Log in</button><button id="b2" onclick="t(2)">Create account</button></div>
+{% if error %}<p style="color:var(--clay);margin-top:10px">{{error}}</p>{% endif %}
+<form id="f1" method="post" action="/login"><label>Email</label><input name="email" type="email" placeholder="you@example.com" required>
+<label>Password</label><input name="password" type="password" placeholder="Any password works in demo" required><br><br><button class="btn">Log in</button></form>
+<form id="f2" method="post" action="/register" style="display:none"><label>Full name</label><input name="name" required>
+<label>Email</label><input name="email" type="email" required><label>Password</label><input name="password" type="password" minlength="6" required><br><br><button class="btn">Create account</button></form>
+<p class="hint">Prototype mode: any email and password will sign you in.</p></div></div>{% endblock %}
+{% block js %}<script>function t(n){f1.style.display=n==1?'block':'none';f2.style.display=n==2?'block':'none';b1.className=n==1?'on':'';b2.className=n==2?'on':''}</script>{% endblock %}

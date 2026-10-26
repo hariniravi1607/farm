@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% block body %}
+<header class="ph"><div><h1>Nova</h1><p>Your personal farming guide, anytime. Ask about crops, diseases or schemes and get a step-by-step checklist.</p></div></header>
+<div class="nv"><div><div class="pnl chat" id="ch"></div>
+<form onsubmit="send(event)" style="display:flex;gap:10px;margin-top:14px"><input id="q" placeholder="Ask: Is cotton suitable for my region?" autocomplete="off"><button class="btn" id="sb">Send</button></form></div>
+<div class="pnl pad" style="align-self:start"><h3 class="h3s">Try asking</h3><p class="sub">Tap a question to send it</p>
+{% for t in ['Is cotton suitable for my region?','How do I treat leaf blast?','Which scheme gives crop insurance?','When should I apply urea?'] %}<a class="chip" style="display:block;margin-bottom:10px;border-radius:12px;padding:10px 14px" href="/nova?q={{t|urlencode}}">{{t}}</a>{% endfor %}</div></div>{% endblock %}
+{% block js %}<script>
+function add(t,u){const d=document.createElement('div');d.className='msg'+(u?' u':'');
+ t.split('\n').filter(x=>x.trim()).forEach(l=>{if(!u&&l.trim().startsWith('- ')){const lb=document.createElement('label');lb.innerHTML='<input type=checkbox><span></span>';lb.lastChild.textContent=l.trim().slice(2);d.appendChild(lb)}else{const p=document.createElement('div');p.textContent=l;d.appendChild(p)}});
+ ch.appendChild(d);ch.scrollTop=ch.scrollHeight;return d}
+async function ask(m){add(m,1);const ty=document.createElement('div');ty.className='msg typing';ty.innerHTML='<i></i><i></i><i></i>';ch.appendChild(ty);ch.scrollTop=ch.scrollHeight;sb.disabled=true;
+ try{const r=await fetch('/api/nova',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:m})});const j=await r.json();ty.remove();add(j.reply)}catch(e){ty.remove();add('I could not reach the server. Please try again.')}sb.disabled=false}
+function send(e){e.preventDefault();const m=q.value.trim();if(!m)return;q.value='';ask(m)}
+add('Hi, I am Nova. Ask me whether a crop suits your region, how to treat a disease, or which scheme to apply for.');
+{% if q %}ask({{q|tojson}});{% endif %}
+</script>{% endblock %}

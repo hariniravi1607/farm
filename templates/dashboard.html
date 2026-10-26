@@ -1,0 +1,43 @@
+{% extends "base.html" %}{% from "_m.html" import cimg, av, ic %}{% block body %}
+<header class="ph"><div><h1>Good day, {{user.name.split()[0]}}</h1><p id="dt">Here is how your farm looks today.</p></div><a class="btn" href="/crop">Analyse my soil</a></header>
+<section class="g2 g-a" style="margin-top:0">
+ <div class="pnl wx"><div><div class="loc"><span class="live"></span>Right now in {{user.region}}</div><div class="t" id="t">--</div><div class="c" id="d">Loading live weather</div>
+  <div class="facts"><div><b id="h">--</b><span>Humidity</span></div><div><b id="w">--</b><span>Wind</span></div><div><b id="r">--</b><span>Rain now</span></div></div></div>
+  <div><canvas id="hourly" height="130"></canvas></div></div>
+ <div class="pnl pad"><h3 class="h3s">Your season so far</h3><p class="sub">Each step feeds the next one.</p>
+  <ol class="jr"><li class="done"><i></i><a href="/soil"><b>Test your soil</b><span>Find a lab in {{user.region}}</span></a></li>
+  <li class="{{'done' if crop}}"><i></i><a href="/crop"><b>Choose a crop</b><span>{{crop.title~' recommended' if crop else 'Enter your lab report'}}</span></a></li>
+  <li class="{{'done' if dis}}"><i></i><a href="/disease"><b>Check leaf health</b><span>{{dis.title if dis else 'No scan yet'}}</span></a></li>
+  <li class="done"><i></i><a href="/schemes"><b>Apply for schemes</b><span>{{matched}} open to you</span></a></li>
+  <li><i></i><a href="/connect"><b>Learn from farmers</b><span>Share results with the community</span></a></li></ol></div>
+</section>
+<section class="pnl strip">
+ <a href="/crop"><span>Recommended crop</span><b class="e">{{crop.title if crop else 'Not yet'}}</b><small>{{'From your last soil report' if crop else 'Run a soil analysis'}}</small></a>
+ <a href="/crop"><span>Soil pH</span><b class="g">{{soil.pH if soil else '--'}}</b><small>{{phnote(soil.pH)|capitalize if soil else 'Needs a soil report'}}</small></a>
+ <a href="/disease"><span>Leaf scans</span><b class="b">{{scans}}</b><small>{{'Latest: '~dis.title if dis else 'Upload a leaf photo'}}</small></a>
+ <a href="/schemes"><span>Schemes open to you</span><b>{{matched}}</b><small>Matched to your crop</small></a></section>
+<section class="g2 g-b">
+ <div class="pnl pad"><h3 class="h3s">Rainfall around today</h3><p class="sub"><span style="color:var(--gold)">Gold</span> is the last 3 days, <span style="color:var(--blue)">blue</span> is the forecast. Values in mm.</p><canvas id="rain" height="120"></canvas></div>
+ <div class="pnl pad"><h3 class="h3s">Soil from your last report</h3><p class="sub">Position on the model's input range.</p>
+ {% if soil %}{% for k,l,c in [('N','Nitrogen',''),('P','Phosphorus','g'),('K','Potassium','b')] %}<div class="mt"><div class="r"><span>{{l}}</span><b>{{soil[k]}} kg/ha</b></div><div class="trk"><i class="{{c}}" style="width:{{pct(k,soil[k])}}%"></i></div></div>{% endfor %}
+ <div class="mt" style="margin-bottom:0"><div class="r"><span>Soil pH</span><b>{{soil.pH}} · {{phnote(soil.pH)}}</b></div><div class="phs"><i style="left:{{pct('pH',soil.pH)}}%"></i></div></div>
+ {% else %}<div class="empty">{{ic('soil')}}<h3>No soil report yet</h3><p>Enter your lab values to see them here.</p><br><a class="btn s" href="/crop">Enter lab values</a></div>{% endif %}</div>
+</section>
+<section class="g2 g-c">
+ <div class="pnl" style="overflow:hidden">{% if crop %}<div style="display:grid;grid-template-columns:150px 1fr"><div class="rimg" style="min-height:150px">{{cimg(crop.title)}}</div><div class="pad"><p class="sub" style="margin:0">Last recommendation</p><h2 style="font-size:28px;color:var(--em);margin:4px 0 10px">{{crop.title}}</h2><a class="btn ghost s" href="/schemes">See schemes</a></div></div>
+ {% else %}<div class="pad"><div class="empty">{{ic('crop')}}<h3>No crop chosen yet</h3><p>Your recommended crop will appear here with a photo.</p></div></div>{% endif %}</div>
+ <div class="pnl pad"><h3 class="h3s">From the community</h3><p class="sub">Latest from Farmer Connect</p>
+ {% for p in posts %}<div class="ppl"><div class="m"><b>{{names.get(p.user_id,'Farmer')}}</b><small style="white-space:normal">{{p.text[:90]}}{{'...' if p.text|length>90}}</small></div></div>{% else %}<p class="mut">No posts yet.</p>{% endfor %}
+ <form action="/nova" style="display:flex;gap:10px;margin-top:16px"><input name="q" placeholder="Ask Nova a question"><button class="btn s">Ask</button></form></div>
+</section>{% endblock %}
+{% block js %}<script>
+dt.textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
+const lat={{coords[0]}},lon={{coords[1]}};
+const code={0:'Clear sky',1:'Mostly clear',2:'Partly cloudy',3:'Overcast',45:'Fog',51:'Light drizzle',61:'Rain',63:'Moderate rain',80:'Showers',95:'Thunderstorm'};
+fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation,weather_code&hourly=temperature_2m&daily=precipitation_sum&past_days=3&forecast_days=4&timezone=auto`)
+.then(r=>r.json()).then(j=>{const c=j.current;t.textContent=Math.round(c.temperature_2m)+'\u00b0';d.textContent=code[c.weather_code]||'Weather update';
+h.textContent=c.relative_humidity_2m+'%';w.textContent=c.wind_speed_10m+' km/h';r.textContent=c.precipitation+' mm';
+const hh=j.hourly.time.map((x,i)=>[x.slice(11),j.hourly.temperature_2m[i]]).slice(72,96);
+new Chart(hourly,{type:'line',data:{labels:hh.map(x=>x[0]),datasets:[{data:hh.map(x=>x[1]),borderColor:'#7AB8F5',backgroundColor:'#7AB8F522',fill:true,tension:.4,pointRadius:0,borderWidth:2.5}]},options:{plugins:{legend:{display:false},title:{display:true,text:'Temperature over the next 24 hours (\u00b0C)',color:'#A4B3A8',font:{weight:'500',size:12}}},scales:{x:{ticks:{maxTicksLimit:6},grid:{display:false}},y:{grid:{color:'#7AB8F51a'}}}}});
+new Chart(rain,{type:'bar',data:{labels:j.daily.time.map(x=>x.slice(5)),datasets:[{data:j.daily.precipitation_sum,backgroundColor:j.daily.time.map((_,i)=>i<3?'#D6A85C':'#7AB8F5'),borderRadius:6,maxBarThickness:42}]},options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false}}}}})}).catch(()=>d.textContent='Weather is offline');
+</script>{% endblock %}

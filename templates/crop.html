@@ -1,0 +1,43 @@
+{% extends "base.html" %}{% from "_m.html" import cimg, ic %}{% block body %}
+<header class="ph"><div><h1>Crop recommendation</h1><p>Enter your lab report and local weather. FarmNova finds the crop that fits your soil best.</p></div></header>
+{% set dv={'N':80,'P':45,'K':40,'pH':6.5,'temp':26,'hum':75,'rain':150} %}
+<div class="crop-l">
+<form method="post" class="pnl form" id="cf">
+{% for title,sub,keys in [('Soil report','From your lab, values as printed on the report',['N','P','K','pH']),('Weather','Typed in by you',['temp','hum','rain'])] %}
+<div class="grp"><h3>{{title}}</h3><p>{{sub}}</p>
+{% for k,l,u in fields if k in keys %}{% set val=vals[k] if vals else dv[k] %}{% set lo=ranges[k][0] %}{% set hi=ranges[k][1] %}
+<div class="fld"><div class="fl"><label for="i{{k}}">{{l}}{% if k=='pH' %} <span data-tip="pH tells how acidic or alkaline the soil is. 7 is neutral.">?</span>{% endif %}</label><span class="u">{{u}}</span></div>
+<div class="in"><input id="i{{k}}" name="{{k}}" type="number" step="any" min="{{lo}}" max="{{hi}}" value="{{val}}" required><input type="range" min="{{lo}}" max="{{hi}}" step="{{0.1 if k=='pH' else 1}}" value="{{val}}" aria-label="{{l}} slider"></div>
+<small>Accepted range {{lo}} to {{hi}}{% if k=='pH' %} &middot; reads as <span class="phn" id="phn"></span>{% endif %}</small></div>{% endfor %}</div>{% endfor %}
+<button class="btn" id="go" style="width:100%;justify-content:center;margin-top:8px"><span>Recommend crop</span></button></form>
+<section>
+<div class="pnl load" id="ld"><span class="spin l"></span><div><b>Analysing your soil</b><br><span class="mut sm">Comparing your values with known crop requirements</span></div></div>
+{% if result %}{% set top=result[0] %}
+<div class="pnl rhero"><div class="rimg">{{cimg(top[0])}}</div><div class="rtxt"><p class="mut">Best match for your soil</p><h2>{{top[0]}}</h2>
+<div class="score"><canvas id="ring" width="84" height="84"></canvas><div><b>{{top[1]}}</b><span>match score out of 100</span></div></div>
+<p class="note">{% if compare %}{% set ok=compare|selectattr('cls','equalto','ok')|list|length %}{{ok}} of 7 values are close to the reference profile for {{top[0]}}. Your soil reads as <b>{{phnote(vals.pH)}}</b>.{% else %}Your soil reads as <b>{{phnote(vals.pH)}}</b>. A detailed comparison is available for crops in the reference table.{% endif %}</p></div></div>
+{% if compare %}<div class="g2 g-b" style="grid-template-columns:1.5fr 1fr">
+<div class="pnl pad"><h3 class="h3s">How your soil compares</h3><p class="sub">Your values against the reference profile for {{top[0]}}</p>
+<div style="overflow-x:auto"><table class="cmp"><thead><tr><th>Parameter</th><th>You</th><th>Reference</th><th>Position on range</th><th>Fit</th></tr></thead><tbody>
+{% for c in compare %}<tr><td>{{c.label}}</td><td><b>{{c.you}}</b> <span class="mut sm">{{c.unit}}</span></td><td class="mut">{{c.ref}}</td><td><div class="scale"><u class="rf" style="left:{{c.ref_pct}}%"></u><u class="y" style="left:{{c.you_pct}}%"></u></div></td><td><span class="st {{c.cls if c.cls!='ok' else ''}}">{{c.fit}}</span></td></tr>{% endfor %}</tbody></table></div>
+<div class="legend"><span><i style="background:var(--em)"></i>Your value</span><span><i style="background:var(--gold)"></i>Reference profile</span></div></div>
+<div class="pnl pad"><h3 class="h3s">Soil profile shape</h3><p class="sub">Both profiles scaled to the same range</p><canvas id="radar" height="230"></canvas></div></div>{% endif %}
+<div class="g2 g-b" style="grid-template-columns:1fr 1fr"><div class="pnl pad"><h3 class="h3s">Other crops that fit</h3><p class="sub">Next closest options</p><div class="alts">
+{% for c,s in result[1:] %}<div class="alt"><div class="th">{{cimg(c)}}</div><div><b>{{c}}</b><div class="trk"><i class="{{['','g','b','g'][loop.index0%4]}}" style="width:{{s}}%"></i></div></div><span>{{s}}</span></div>{% endfor %}</div></div>
+<div class="pnl pad"><h3 class="h3s">What next</h3><p class="sub">Your result is saved and used across FarmNova</p><div class="acts" style="margin-top:6px;flex-direction:column;align-items:stretch">
+<a class="btn" href="/schemes">See schemes for {{top[0]}}</a><a class="btn ghost" href="/connect?share={{('I ran a soil analysis on FarmNova and the best match was '~top[0]~'. #CropChoice')|urlencode}}">Share on Farmer Connect</a>
+<a class="btn ghost" href="/nova?q={{('Is '~top[0]~' suitable for my region?')|urlencode}}">Ask Nova about {{top[0]}}</a></div></div></div>
+{% else %}<div class="pnl pad"><div class="empty">{{ic('crop')}}<h3>Your recommendation will appear here</h3><p>Fill in the values on the left and press Recommend crop. You will see the best crop with a photo, how your soil compares, and other options.</p></div>
+<ul class="tips" style="margin-top:20px"><li>No soil report yet? <a href="/soil" style="color:var(--em)">Find a testing centre</a>.</li><li>The result feeds Schemes, the dashboard and Nova.</li></ul></div>{% endif %}
+</section></div>{% endblock %}
+{% block js %}<script>
+const F=document.querySelectorAll('.fld');
+function ph(v){v=+v;return v<5.5?'strongly acidic':v<6.5?'acidic':v<=7.5?'neutral':v<=8.5?'alkaline':'strongly alkaline'}
+F.forEach(f=>{const [n,r]=f.querySelectorAll('input');const up=()=>{if(n.name=='pH'&&window.phn)phn.textContent=ph(n.value)};
+ r.oninput=()=>{n.value=r.value;up()};n.oninput=()=>{r.value=n.value;up()};up()});
+cf.onsubmit=()=>{go.disabled=true;go.innerHTML='<span class="spin"></span><span>Analysing...</span>';ld.classList.add('on')};
+{% if result %}
+new Chart(ring,{type:'doughnut',data:{datasets:[{data:[{{result[0][1]}},{{100-result[0][1]}}],backgroundColor:['#32D583','#26362c'],borderWidth:0,cutout:'78%'}]},options:{plugins:{tooltip:{enabled:false}},responsive:false}});
+{% if compare %}new Chart(radar,{type:'radar',data:{labels:{{compare|map(attribute='label')|list|tojson}},datasets:[{label:'You',data:{{compare|map(attribute='you_pct')|list|tojson}},borderColor:'#32D583',backgroundColor:'#32D58333',borderWidth:2,pointRadius:3},{label:'Reference',data:{{compare|map(attribute='ref_pct')|list|tojson}},borderColor:'#D6A85C',backgroundColor:'#D6A85C14',borderDash:[5,4],borderWidth:2,pointRadius:3}]},options:{scales:{r:{ticks:{display:false},grid:{color:'#304238'},angleLines:{color:'#304238'},pointLabels:{font:{size:11}}}},plugins:{legend:{position:'bottom',labels:{boxWidth:10}}}}});{% endif %}
+{% endif %}
+</script>{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}{% from "_m.html" import av, ic %}{% block body %}
+<div class="net">
+<aside class="pnl pf"><div class="cover"></div><div class="b">{{av(user,'lg')}}<h3>{{user.name}}</h3><p>{{headline(user)}}</p></div>
+<div class="pst"><div><b>{{stats.followers}}</b><span>Followers</span></div><div><b>{{stats.following}}</b><span>Following</span></div><div><b>{{stats.posts}}</b><span>Posts</span></div></div>
+<a class="lk" href="/crop">Latest crop: <b style="color:var(--tx)">{{last_crop.title if last_crop else 'none yet'}}</b></a><a class="lk" href="/disease">Latest scan: <b style="color:var(--tx)">{{last_dis.title if last_dis else 'none yet'}}</b></a></aside>
+<section>
+<div class="pnl cmpz"><div class="row">{{av(user)}}<button class="fake" id="op" type="button">Share an update with your farming network</button></div>
+<form method="post" class="cz {{'on' if prefill}}" id="cz"><textarea name="text" id="tx" placeholder="What is happening on your farm? Use #hashtags so others can find it.">{{prefill}}</textarea>
+<div class="cact"><button type="button" class="pa" data-t="{{'My soil analysis suggests '~last_crop.title~'. #CropChoice' if last_crop else ''}}" {{'disabled' if not last_crop}}>{{ic('crop')}}Add crop result</button>
+<button type="button" class="pa" data-t="{{'Leaf scan result: '~last_dis.title~'. Any advice? #LeafDisease' if last_dis else ''}}" {{'disabled' if not last_dis}}>{{ic('disease')}}Add scan result</button><span class="sp"></span><button class="btn s">Post</button></div></form></div>
+{% for p in posts %}{% set a=people.get(p.user_id) %}{% set lk=likes.get(p.id,[]) %}{% set cs=comments.get(p.id,[]) %}
+<article class="pnl post" id="p{{p.id}}"><div class="hd">{% if a %}{{av(a)}}{% endif %}<div class="m"><b>{{a.name if a else 'Farmer'}}</b><small>{{headline(a) if a}}</small><small>{{p.at|ago}} &middot; {{a.region if a}}</small></div>
+{% if a and a.id!=user.id %}<form method="post" action="/follow/{{a.id}}"><button class="btn ghost s">{{'Following' if a.id in following else 'Follow'}}</button></form>{% endif %}</div>
+<div class="bd">{{p.text|tagify}}</div>
+<div class="cnt"><span id="lc{{p.id}}">{{lk|length}} like{{'' if lk|length==1 else 's'}}</span><span>{{cs|length}} comment{{'' if cs|length==1 else 's'}}</span></div>
+<div class="pbar"><button class="pa {{'on' if user.id in lk}}" data-like="{{p.id}}">{{ic('like')}}Like</button><button class="pa" data-cm="{{p.id}}">{{ic('comment')}}Comment</button>
+<form method="post" action="/repost/{{p.id}}"><button class="pa">{{ic('repost')}}Repost</button></form><button class="pa" data-send="{{p.text}}">{{ic('send')}}Send</button></div>
+<div class="cm {{'on' if cs}}" id="cm{{p.id}}">{% for c in cs %}{% set ca=people.get(c.user_id) %}<div class="cmi">{% if ca %}{{av(ca,'xs')}}{% endif %}<div><b>{{ca.name if ca else 'Farmer'}}</b><small>{{c.at|ago}}</small><p>{{c.text}}</p></div></div>{% endfor %}
+<form class="cmf" method="post" action="/comment/{{p.id}}">{{av(user,'xs')}}<input name="text" placeholder="Add a comment" aria-label="Add a comment" required></form></div></article>
+{% else %}<div class="empty" style="margin-top:16px">{{ic('connect')}}<h3>No posts yet</h3><p>Be the first to share something.</p></div>{% endfor %}</section>
+<aside class="rail"><div class="pnl pad"><h3>Farmers to follow</h3>
+{% for id,f in people.items() if id!=user.id and id not in following %}{% if loop.index<=20 %}<div class="ppl">{{av(f)}}<div class="m"><b>{{f.name}}</b><small>{{headline(f)}}</small></div><form method="post" action="/follow/{{id}}"><button class="btn ghost s">Follow</button></form></div>{% endif %}{% else %}<p class="mut sm">You follow everyone here.</p>{% endfor %}</div>
+<div class="pnl pad" style="margin-top:18px"><h3>Trending in your network</h3>{% for t,n in tags %}<div class="tg"><span class="ht" style="font-size:13.5px">#{{t}}</span><span>{{n}} post{{'' if n==1 else 's'}}</span></div>{% endfor %}
+<h3 style="margin-top:20px">Groups</h3>{% for c,n in groups %}<div class="tg"><b style="font-weight:500">{{c}} growers</b><span>{{n}} farmer{{'' if n==1 else 's'}}</span></div>{% endfor %}</div></aside></div>{% endblock %}
+{% block js %}<script>
+op.onclick=()=>{cz.classList.add('on');tx.focus()};
+document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{if(b.dataset.t){tx.value=(tx.value+' '+b.dataset.t).trim();cz.classList.add('on')}});
+document.querySelectorAll('[data-cm]').forEach(b=>b.onclick=()=>document.getElementById('cm'+b.dataset.cm).classList.toggle('on'));
+document.querySelectorAll('[data-like]').forEach(b=>b.onclick=async()=>{const r=await fetch('/like/'+b.dataset.like,{method:'POST'});const j=await r.json();b.classList.toggle('on',j.liked);document.getElementById('lc'+b.dataset.like).textContent=j.count+' like'+(j.count==1?'':'s')});
+document.querySelectorAll('[data-send]').forEach(b=>b.onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText(b.dataset.send);const o=b.innerHTML;b.textContent='Copied';setTimeout(()=>b.innerHTML=o,1200)});
+{% if prefill %}tx.focus();{% endif %}
+</script>{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% from "_m.html" import ic %}{% block body %}
+<header class="ph"><div><h1>Disease prediction</h1><p>Upload a clear photo of the affected leaf. FarmNova predicts the likely disease and suggests the fertilizer or spray to use.</p></div></header>
+<div class="crop-l" style="grid-template-columns:420px 1fr">
+<form method="post" enctype="multipart/form-data" class="pnl pad form" id="df">
+<label class="dz" id="dz" for="im"><div id="dh">{{ic('upload')}}<h3 style="font-size:16px">Drop a leaf photo here</h3><p class="mut sm" style="margin-top:4px">or click to choose a file</p></div><img id="pv" alt="Selected leaf"></label>
+<input type="file" name="image" id="im" accept="image/*" required hidden>
+<p class="mut sm" id="fn" style="margin:12px 0"></p>
+<button class="btn" id="go" style="width:100%;justify-content:center"><span>Check my crop</span></button></form>
+<section>
+<div class="pnl load" id="ld"><span class="spin l"></span><div><b>Reading your leaf</b><br><span class="mut sm">Running the disease model</span></div></div>
+{% if result %}<div class="pnl pad"><div class="dres"><p class="mut">Probable disease</p><h2>{{result.name}}</h2>
+<div class="mt" style="max-width:380px;margin:0"><div class="r"><span>Model confidence</span><b>{{result.conf}}%</b></div><div class="trk"><i class="g" style="width:{{result.conf}}%;background:var(--clay)"></i></div></div></div>
+<h3 class="h3s">Fertilizer and treatment</h3><p style="margin:6px 0 4px;max-width:560px">{{result.advice}}</p>
+<div class="acts"><a class="btn" href="/connect?share={{('Scan result: '~result.name~'. Has anyone dealt with this? #LeafDisease')|urlencode}}">Share to a group</a><a class="btn ghost" href="/nova?q={{('How do I treat '~result.name~'?')|urlencode}}">Ask Nova for steps</a></div></div>
+{% else %}<div class="pnl pad"><div class="empty">{{ic('disease')}}<h3>No scan yet</h3><p>Your result appears here with the disease name, confidence and treatment.</p></div>
+<h3 class="h3s" style="margin-top:22px">For a better reading</h3><ul class="tips"><li>Photograph one leaf in daylight, not in shade.</li><li>Keep the affected area in the centre and in focus.</li><li>Use a plain background if you can.</li></ul></div>{% endif %}
+</section></div>{% endblock %}
+{% block js %}<script>
+const show=f=>{if(!f)return;pv.src=URL.createObjectURL(f);pv.style.display='block';dh.style.display='none';fn.textContent=f.name};
+im.onchange=()=>show(im.files[0]);
+['dragover','dragenter'].forEach(e=>dz.addEventListener(e,x=>{x.preventDefault();dz.classList.add('over')}));
+['dragleave','drop'].forEach(e=>dz.addEventListener(e,x=>{x.preventDefault();dz.classList.remove('over')}));
+dz.addEventListener('drop',x=>{im.files=x.dataTransfer.files;show(im.files[0])});
+df.onsubmit=()=>{go.disabled=true;go.innerHTML='<span class="spin"></span><span>Analysing...</span>';ld.classList.add('on')};
+</script>{% endblock %}

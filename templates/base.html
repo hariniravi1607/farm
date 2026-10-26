@@ -1,0 +1,23 @@
+{% from "_m.html" import ic, av %}<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FarmNova</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+<script>Chart.defaults.color='#A4B3A8';Chart.defaults.borderColor='#30423880';Chart.defaults.font.family='Inter, sans-serif';</script></head><body>
+{% if user %}<div class="shell"><nav>
+<div class="brand"><svg viewBox="0 0 32 32"><path d="M16 2 28 9v14L16 30 4 23V9Z" fill="#32D583"/><path d="M16 23v-8m0 0c0-3 2-5 6-5 0 3-2 5-6 5Zm0 3c0-2-1.5-4-5-4 0 2 1.5 4 5 4Z" stroke="#101713" stroke-width="2" fill="none" stroke-linecap="round"/></svg><span>Farm<b>Nova</b></span></div>
+<div class="tagline">Your personal farming guide, anytime.</div>
+<div class="navlbl">Overview</div>
+<a class="nl {{'on' if active=='dashboard'}}" href="/dashboard" title="Dashboard">{{ic('dashboard')}}<span>Dashboard</span></a>
+<div class="navlbl">Plan your season</div>
+{% for k,t in [('soil','Soil Testing'),('crop','Crop Recommendation'),('disease','Disease Prediction'),('schemes','Schemes')] %}
+<a class="nl {{'on' if active==k}}" href="/{{k}}" title="{{t}}">{{ic(k)}}<span>{{t}}</span></a>{% endfor %}
+<div class="navlbl">Community</div>
+<a class="nl {{'on' if active=='connect'}}" href="/connect" title="Farmer Connect">{{ic('connect')}}<span>Farmer Connect</span></a>
+<a class="nl {{'on' if active=='nova'}}" href="/nova" title="Nova Assistant">{{ic('nova')}}<span>Nova Assistant</span></a>
+<div class="who">{{av(user)}}<div><b>{{user.name}}</b><a href="/logout">Log out</a></div></div></nav>
+<main>{% block body %}{% endblock %}</main></div>
+{% else %}{% block bare %}{% endblock %}{% endif %}
+{% block js %}{% endblock %}</body></html>

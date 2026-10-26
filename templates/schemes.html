@@ -1,0 +1,11 @@
+{% extends "base.html" %}{% block body %}
+<header class="ph"><div><h1>Government schemes</h1><p>Matched for <b style="color:var(--em)">{{crop_name}}</b>{{' from your latest crop recommendation.' if from_module else ', your main crop. Run Crop Recommendation to refine this.'}}</p></div></header>
+<div class="tools"><input id="sq" placeholder="Search schemes" aria-label="Search schemes"><button class="chip on" data-f="all">All schemes</button><button class="chip" data-f="ok">Eligible only</button></div>
+<div class="pnl"><table class="tbl" id="tb"><thead><tr><th>Scheme</th><th>What you get</th><th>Documents needed</th><th>Status</th><th></th></tr></thead><tbody>
+{% for s,ok in rows %}<tr data-ok="{{1 if ok else 0}}"><td><b>{{s[0]}}</b></td><td style="max-width:300px">{{s[1]}}</td><td class="mut" style="max-width:220px">{{s[3]}}</td>
+<td><span class="st {{'' if ok else 'no'}}">{{'Eligible' if ok else 'Not for '~crop_name}}</span></td><td style="text-align:right"><a class="btn ghost s" href="/nova?q={{('How do I apply for '~s[0]~'?')|urlencode}}">How to apply</a></td></tr>{% endfor %}</tbody></table></div>{% endblock %}
+{% block js %}<script>
+let mode='all';const rows=[...document.querySelectorAll('#tb tbody tr')];
+function ap(){rows.forEach(r=>r.style.display=(mode=='all'||r.dataset.ok=='1')&&r.textContent.toLowerCase().includes(sq.value.toLowerCase())?'':'none')}
+sq.oninput=ap;document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{mode=b.dataset.f;document.querySelectorAll('[data-f]').forEach(x=>x.classList.toggle('on',x==b));ap()});
+</script>{% endblock %}
